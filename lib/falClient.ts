@@ -12,10 +12,11 @@ export interface GenerateResult {
   model: string;
 }
 
-const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux/dev/image-to-image";
-const STRENGTH = Number(process.env.FAL_STRENGTH ?? "0.75");
+const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux-control-lora-depth";
 const STEPS = Number(process.env.FAL_STEPS ?? "28");
-const GUIDANCE = Number(process.env.FAL_GUIDANCE ?? "3.5");
+const GUIDANCE = Number(process.env.FAL_GUIDANCE ?? "10");
+const CONTROL_STRENGTH = Number(process.env.FAL_CONTROL_STRENGTH ?? "0.85");
+const IMG2IMG_STRENGTH = Number(process.env.FAL_STRENGTH ?? "0.85");
 
 let configured = false;
 function ensureConfigured(key: string) {
@@ -48,17 +49,10 @@ export async function generateReformImage(
   const blob = await dataUrlToBlob(req.imageDataUrl);
   const imageUrl = await fal.storage.upload(blob);
 
+  const input = buildInput(MODEL, style.prompt, imageUrl);
+
   const result = (await fal.subscribe(MODEL, {
-    input: {
-      prompt: style.prompt,
-      image_url: imageUrl,
-      strength: STRENGTH,
-      num_inference_steps: STEPS,
-      guidance_scale: GUIDANCE,
-      num_images: 1,
-      enable_safety_checker: true,
-      output_format: "jpeg",
-    },
+    input,
     logs: false,
   })) as FalImageOutput;
 
@@ -68,9 +62,49 @@ export async function generateReformImage(
   return { imageUrl: outUrl, seed: result.seed, model: MODEL };
 }
 
+function buildInput(model: string, prompt: string, imageUrl: string) {
+  const base = {
+    prompt,
+    num_inference_steps: STEPS,
+    guidance_scale: GUIDANCE,
+    num_images: 1,
+    enable_safety_checker: true,
+    output_format: "jpeg",
+  };
+
+  if (model.includes("control-lora-depth") || model.includes("control-lora-canny")) {
+    return {
+      ...base,
+      control_lora_image_url: imageUrl,
+      control_lora_strength: CONTROL_STRENGTH,
+    };
+  }
+
+  if (model.includes("flux-general")) {
+    return {
+      ...base,
+      controlnets: [
+        {
+          path: "jasperai/Flux.1-dev-Controlnet-Depth",
+          control_image_url: imageUrl,
+          conditioning_scale: CONTROL_STRENGTH,
+          start_percentage: 0,
+          end_percentage: 1,
+        },
+      ],
+    };
+  }
+
+  return {
+    ...base,
+    image_url: imageUrl,
+    strength: IMG2IMG_STRENGTH,
+  };
+}
+
 async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
   const res = await fetch(dataUrl);
   return res.blob();
 }
 
-export const falConfig = { model: MODEL, strength: STRENGTH };
+export const falConfig = { model: MODEL };
