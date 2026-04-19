@@ -3,6 +3,7 @@ import { generateReformImage } from "@/lib/falClient";
 import type { ReformStyleId } from "@/lib/styles";
 
 export const runtime = "nodejs";
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
