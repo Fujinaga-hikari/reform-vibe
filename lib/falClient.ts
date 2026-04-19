@@ -12,11 +12,11 @@ export interface GenerateResult {
   model: string;
 }
 
-const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux-control-lora-depth";
+const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux/dev/image-to-image";
 const STEPS = Number(process.env.FAL_STEPS ?? "28");
-const GUIDANCE = Number(process.env.FAL_GUIDANCE ?? "10");
+const GUIDANCE = Number(process.env.FAL_GUIDANCE ?? "3.5");
 const CONTROL_STRENGTH = Number(process.env.FAL_CONTROL_STRENGTH ?? "0.85");
-const IMG2IMG_STRENGTH = Number(process.env.FAL_STRENGTH ?? "0.85");
+const IMG2IMG_STRENGTH = Number(process.env.FAL_STRENGTH ?? "0.9");
 
 let configured = false;
 function ensureConfigured(key: string) {
@@ -51,15 +51,47 @@ export async function generateReformImage(
 
   const input = buildInput(MODEL, style.prompt, imageUrl);
 
-  const result = (await fal.subscribe(MODEL, {
-    input,
-    logs: false,
-  })) as FalImageOutput;
+  let result: FalImageOutput;
+  try {
+    result = (await fal.subscribe(MODEL, {
+      input,
+      logs: false,
+    })) as FalImageOutput;
+  } catch (err) {
+    const detail = extractFalErrorDetail(err);
+    console.error("[fal] subscribe failed", { model: MODEL, detail });
+    throw new Error(`fal.ai エラー (${MODEL}): ${detail}`);
+  }
 
   const outUrl = result.images?.[0]?.url ?? result.image?.url;
   if (!outUrl) throw new Error("fal.ai から画像URLが返りませんでした。");
 
   return { imageUrl: outUrl, seed: result.seed, model: MODEL };
+}
+
+function extractFalErrorDetail(err: unknown): string {
+  if (!err) return "unknown";
+  if (typeof err === "string") return err;
+  const e = err as {
+    status?: number;
+    body?: unknown;
+    message?: string;
+    name?: string;
+  };
+  const parts: string[] = [];
+  if (e.name) parts.push(e.name);
+  if (typeof e.status === "number") parts.push(`HTTP ${e.status}`);
+  if (e.message) parts.push(e.message);
+  if (e.body !== undefined) {
+    try {
+      parts.push(
+        typeof e.body === "string" ? e.body : JSON.stringify(e.body).slice(0, 500),
+      );
+    } catch {
+      /* ignore */
+    }
+  }
+  return parts.length ? parts.join(" | ") : "unknown";
 }
 
 function buildInput(model: string, prompt: string, imageUrl: string) {
