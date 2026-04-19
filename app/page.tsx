@@ -20,13 +20,21 @@ import type { ReformStyleId } from "@/lib/styles";
 type Status = "idle" | "generating" | "done" | "error";
 type ErrorKind = "timeout" | "network" | "server" | "unknown";
 
-const GENERATION_TIMEOUT_MS = 90_000;
+interface Progress {
+  state: "queued" | "generating";
+  queuePosition?: number;
+  logs?: string[];
+}
+
+const TOTAL_TIMEOUT_MS = 5 * 60 * 1000;
+const POLL_INTERVAL_MS = 2000;
 
 export default function HomePage() {
   const [image, setImage] = useState<string | null>(null);
   const [styleId, setStyleId] = useState<ReformStyleId | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<string | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<{ kind: ErrorKind; message: string } | null>(null);
 
   const canGenerate = !!image && !!styleId && status !== "generating";
@@ -35,33 +43,78 @@ export default function HomePage() {
     if (!image || !styleId) return;
     setStatus("generating");
     setError(null);
+    setProgress({ state: "queued" });
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
+    const totalTimeoutId = setTimeout(() => controller.abort(), TOTAL_TIMEOUT_MS);
 
     try {
-      const res = await fetch("/api/generate", {
+      const submitRes = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ imageDataUrl: image, styleId }),
         signal: controller.signal,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
+      const submitData = await submitRes.json().catch(() => ({}));
+      if (!submitRes.ok) {
         setError({
           kind: "server",
-          message: data.error ?? `サーバーエラー (HTTP ${res.status})`,
+          message: submitData.error ?? `サーバーエラー (HTTP ${submitRes.status})`,
         });
         setStatus("error");
         return;
       }
-      setResult(data.imageUrl);
-      setStatus("done");
+      const requestId: string | undefined = submitData.requestId;
+      if (!requestId) {
+        setError({ kind: "server", message: "requestId が返りませんでした。" });
+        setStatus("error");
+        return;
+      }
+
+      while (!controller.signal.aborted) {
+        await sleep(POLL_INTERVAL_MS, controller.signal);
+        const statusRes = await fetch(
+          `/api/generate/status?requestId=${encodeURIComponent(requestId)}`,
+          { signal: controller.signal },
+        );
+        const statusData = await statusRes.json().catch(() => ({}));
+        if (!statusRes.ok) {
+          setError({
+            kind: "server",
+            message: statusData.error ?? `サーバーエラー (HTTP ${statusRes.status})`,
+          });
+          setStatus("error");
+          return;
+        }
+
+        if (statusData.state === "queued" || statusData.state === "generating") {
+          setProgress({
+            state: statusData.state,
+            queuePosition: statusData.queuePosition,
+            logs: statusData.logs,
+          });
+          continue;
+        }
+        if (statusData.state === "done" && statusData.imageUrl) {
+          setResult(statusData.imageUrl);
+          setStatus("done");
+          setProgress(null);
+          return;
+        }
+        if (statusData.state === "error") {
+          setError({
+            kind: "server",
+            message: statusData.error ?? "生成に失敗しました。",
+          });
+          setStatus("error");
+          return;
+        }
+      }
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") {
         setError({
           kind: "timeout",
-          message: `生成が ${GENERATION_TIMEOUT_MS / 1000} 秒以内に完了しませんでした。時間をおいて再度お試しください。`,
+          message: `生成が ${TOTAL_TIMEOUT_MS / 1000} 秒以内に完了しませんでした。fal.ai のキューが混雑している可能性があります。少し時間をおいて再度お試しください。`,
         });
       } else if (e instanceof TypeError) {
         setError({
@@ -76,8 +129,23 @@ export default function HomePage() {
       }
       setStatus("error");
     } finally {
-      clearTimeout(timeoutId);
+      clearTimeout(totalTimeoutId);
     }
+  }
+
+  function sleep(ms: number, signal: AbortSignal) {
+    return new Promise<void>((resolve, reject) => {
+      if (signal.aborted) {
+        reject(new DOMException("Aborted", "AbortError"));
+        return;
+      }
+      const id = setTimeout(resolve, ms);
+      const onAbort = () => {
+        clearTimeout(id);
+        reject(new DOMException("Aborted", "AbortError"));
+      };
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
   }
 
   return (
@@ -148,7 +216,12 @@ export default function HomePage() {
               )}
             </button>
 
-            {status === "generating" && <GenerationLoader />}
+            {status === "generating" && (
+              <GenerationLoader
+                queuePosition={progress?.queuePosition}
+                logs={progress?.logs}
+              />
+            )}
 
             {status === "error" && error && (
               <div

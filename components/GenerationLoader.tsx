@@ -3,20 +3,25 @@
 import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-const MESSAGES = [
+interface Props {
+  queuePosition?: number;
+  logs?: string[];
+}
+
+const FALLBACK_MESSAGES = [
   "AIがリフォーム案を設計中...",
   "部屋の構造を解析しています...",
   "素材とライティングを選定中...",
   "最終レンダリングをかけています...",
 ];
 
-export default function GenerationLoader() {
+export default function GenerationLoader({ queuePosition, logs }: Props) {
   const [idx, setIdx] = useState(0);
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     const msgId = setInterval(
-      () => setIdx((i) => (i + 1) % MESSAGES.length),
+      () => setIdx((i) => (i + 1) % FALLBACK_MESSAGES.length),
       2200,
     );
     const tickId = setInterval(() => setElapsed((s) => s + 1), 1000);
@@ -25,6 +30,13 @@ export default function GenerationLoader() {
       clearInterval(tickId);
     };
   }, []);
+
+  const headline =
+    typeof queuePosition === "number" && queuePosition > 0
+      ? `キュー待ち (${queuePosition}人前)`
+      : logs && logs.length > 0
+        ? logs[logs.length - 1]
+        : FALLBACK_MESSAGES[idx];
 
   return (
     <div
@@ -38,11 +50,20 @@ export default function GenerationLoader() {
           <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
         <div className="space-y-1">
-          <p className="text-lg font-semibold">{MESSAGES[idx]}</p>
+          <p className="text-lg font-semibold break-words">{headline}</p>
           <p className="text-sm text-navy-100">
             通常 15〜30秒ほどで完成します（経過 {elapsed}秒）。
           </p>
         </div>
+        {logs && logs.length > 1 && (
+          <div className="mt-2 max-h-20 w-full overflow-hidden rounded-lg bg-black/20 p-2 text-left text-xs font-mono text-navy-100">
+            {logs.slice(-3).map((line, i) => (
+              <p key={i} className="truncate">
+                {line}
+              </p>
+            ))}
+          </div>
+        )}
         <div className="mt-2 flex items-center gap-1.5">
           {[0, 1, 2].map((i) => (
             <span
