@@ -96,7 +96,7 @@ export default function HomePage() {
           continue;
         }
         if (statusData.state === "done" && statusData.imageUrl) {
-          setResult(statusData.imageUrl);
+          setResult(proxifyImageUrl(statusData.imageUrl));
           setStatus("done");
           setProgress(null);
           return;
@@ -131,6 +131,18 @@ export default function HomePage() {
     } finally {
       clearTimeout(totalTimeoutId);
     }
+  }
+
+  function proxifyImageUrl(url: string): string {
+    try {
+      const u = new URL(url);
+      if (u.hostname.endsWith("fal.media") || u.hostname === "fal.run") {
+        return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+      }
+    } catch {
+      /* fall through */
+    }
+    return url;
   }
 
   function sleep(ms: number, signal: AbortSignal) {
