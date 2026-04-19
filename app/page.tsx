@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Building2,
   Camera,
+  Loader2,
   ShieldCheck,
   Sparkles,
   Wand2,
@@ -17,13 +18,16 @@ import StyleSelector from "@/components/StyleSelector";
 import type { ReformStyleId } from "@/lib/styles";
 
 type Status = "idle" | "generating" | "done" | "error";
+type ErrorKind = "timeout" | "network" | "server" | "unknown";
+
+const GENERATION_TIMEOUT_MS = 90_000;
 
 export default function HomePage() {
   const [image, setImage] = useState<string | null>(null);
   const [styleId, setStyleId] = useState<ReformStyleId | null>(null);
   const [status, setStatus] = useState<Status>("idle");
   const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<{ kind: ErrorKind; message: string } | null>(null);
 
   const canGenerate = !!image && !!styleId && status !== "generating";
 
@@ -31,19 +35,48 @@ export default function HomePage() {
     if (!image || !styleId) return;
     setStatus("generating");
     setError(null);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GENERATION_TIMEOUT_MS);
+
     try {
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ imageDataUrl: image, styleId }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "生成に失敗しました");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError({
+          kind: "server",
+          message: data.error ?? `サーバーエラー (HTTP ${res.status})`,
+        });
+        setStatus("error");
+        return;
+      }
       setResult(data.imageUrl);
       setStatus("done");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "unknown error");
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setError({
+          kind: "timeout",
+          message: `生成が ${GENERATION_TIMEOUT_MS / 1000} 秒以内に完了しませんでした。時間をおいて再度お試しください。`,
+        });
+      } else if (e instanceof TypeError) {
+        setError({
+          kind: "network",
+          message: "ネットワークに接続できませんでした。通信環境を確認してください。",
+        });
+      } else {
+        setError({
+          kind: "unknown",
+          message: e instanceof Error ? e.message : "予期しないエラーが発生しました。",
+        });
+      }
       setStatus("error");
+    } finally {
+      clearTimeout(timeoutId);
     }
   }
 
@@ -98,23 +131,47 @@ export default function HomePage() {
               type="button"
               disabled={!canGenerate}
               onClick={onGenerate}
+              aria-busy={status === "generating"}
               className="group inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-900 px-6 py-4 text-base font-semibold text-white shadow-lg shadow-navy-900/10 transition hover:bg-navy-700 disabled:cursor-not-allowed disabled:bg-navy-200 disabled:text-navy-400 disabled:shadow-none sm:w-auto"
             >
-              <Wand2 className="h-5 w-5" />
-              リフォーム案を生成する
-              <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
+              {status === "generating" ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  生成中...
+                </>
+              ) : (
+                <>
+                  <Wand2 className="h-5 w-5" />
+                  リフォーム案を生成する
+                  <ArrowRight className="h-5 w-5 transition group-hover:translate-x-0.5" />
+                </>
+              )}
             </button>
 
             {status === "generating" && <GenerationLoader />}
 
             {status === "error" && error && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
-                <p className="font-semibold">生成に失敗しました</p>
-                <p className="mt-1 break-all">{error}</p>
-                <p className="mt-2 text-xs text-rose-600/80">
-                  まだ API 連携は骨組みのみです。
-                  <code>lib/falClient.ts</code> の TODO を実装してください。
+              <div
+                role="alert"
+                className="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700"
+              >
+                <p className="font-semibold">
+                  {error.kind === "timeout"
+                    ? "タイムアウトしました"
+                    : error.kind === "network"
+                      ? "ネットワークエラー"
+                      : error.kind === "server"
+                        ? "生成に失敗しました"
+                        : "エラーが発生しました"}
                 </p>
+                <p className="mt-1 break-all">{error.message}</p>
+                <button
+                  type="button"
+                  onClick={onGenerate}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-rose-700"
+                >
+                  もう一度生成する
+                </button>
               </div>
             )}
 

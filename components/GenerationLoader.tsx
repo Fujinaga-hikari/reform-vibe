@@ -1,6 +1,6 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
 const MESSAGES = [
@@ -12,26 +12,35 @@ const MESSAGES = [
 
 export default function GenerationLoader() {
   const [idx, setIdx] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
-    const id = setInterval(
+    const msgId = setInterval(
       () => setIdx((i) => (i + 1) % MESSAGES.length),
       2200,
     );
-    return () => clearInterval(id);
+    const tickId = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => {
+      clearInterval(msgId);
+      clearInterval(tickId);
+    };
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-navy-100 bg-gradient-to-br from-navy-900 to-navy-700 p-8 text-white shadow-lg">
+    <div
+      role="status"
+      aria-live="polite"
+      className="relative overflow-hidden rounded-2xl border border-navy-100 bg-gradient-to-br from-navy-900 to-navy-700 p-8 text-white shadow-lg"
+    >
       <div className="absolute inset-0 shimmer-bg animate-shimmer opacity-40" />
       <div className="relative flex flex-col items-center gap-4 text-center">
         <div className="flex h-14 w-14 items-center justify-center rounded-full bg-white/10 backdrop-blur">
-          <Sparkles className="h-7 w-7 text-white" />
+          <Loader2 className="h-8 w-8 animate-spin text-white" />
         </div>
         <div className="space-y-1">
           <p className="text-lg font-semibold">{MESSAGES[idx]}</p>
           <p className="text-sm text-navy-100">
-            通常 15〜30秒ほどで完成します。そのままお待ちください。
+            通常 15〜30秒ほどで完成します（経過 {elapsed}秒）。
           </p>
         </div>
         <div className="mt-2 flex items-center gap-1.5">

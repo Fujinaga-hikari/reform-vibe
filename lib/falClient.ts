@@ -1,3 +1,4 @@
+import * as fal from "@fal-ai/serverless-client";
 import { REFORM_STYLES, type ReformStyleId } from "./styles";
 
 export interface GenerateRequest {
@@ -11,8 +12,23 @@ export interface GenerateResult {
   model: string;
 }
 
-const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux-general";
-const CONTROLNET = process.env.FAL_CONTROLNET ?? "depth";
+const MODEL = process.env.FAL_MODEL ?? "fal-ai/flux/dev/image-to-image";
+const STRENGTH = Number(process.env.FAL_STRENGTH ?? "0.75");
+const STEPS = Number(process.env.FAL_STEPS ?? "28");
+const GUIDANCE = Number(process.env.FAL_GUIDANCE ?? "3.5");
+
+let configured = false;
+function ensureConfigured(key: string) {
+  if (configured) return;
+  fal.config({ credentials: key });
+  configured = true;
+}
+
+interface FalImageOutput {
+  images?: Array<{ url: string }>;
+  image?: { url: string };
+  seed?: number;
+}
 
 export async function generateReformImage(
   req: GenerateRequest,
@@ -27,28 +43,34 @@ export async function generateReformImage(
   const style = REFORM_STYLES.find((s) => s.id === req.styleId);
   if (!style) throw new Error(`Unknown style: ${req.styleId}`);
 
-  // TODO: 実際の fal.ai 呼び出しをここに実装する。
-  //
-  // 例 (擬似コード):
-  //
-  //   import * as fal from "@fal-ai/serverless-client";
-  //   fal.config({ credentials: key });
-  //
-  //   const result = await fal.subscribe(MODEL, {
-  //     input: {
-  //       image_url: req.imageDataUrl,
-  //       prompt: style.prompt,
-  //       controlnet: CONTROLNET,          // "canny" | "depth"
-  //       controlnet_conditioning_scale: 0.85,
-  //       num_inference_steps: 28,
-  //       guidance_scale: 7,
-  //     },
-  //   });
-  //   return { imageUrl: result.images[0].url, seed: result.seed, model: MODEL };
+  ensureConfigured(key);
 
-  throw new Error(
-    "generateReformImage は未実装です。lib/falClient.ts の TODO を埋めてください。",
-  );
+  const blob = await dataUrlToBlob(req.imageDataUrl);
+  const imageUrl = await fal.storage.upload(blob);
+
+  const result = (await fal.subscribe(MODEL, {
+    input: {
+      prompt: style.prompt,
+      image_url: imageUrl,
+      strength: STRENGTH,
+      num_inference_steps: STEPS,
+      guidance_scale: GUIDANCE,
+      num_images: 1,
+      enable_safety_checker: true,
+      output_format: "jpeg",
+    },
+    logs: false,
+  })) as FalImageOutput;
+
+  const outUrl = result.images?.[0]?.url ?? result.image?.url;
+  if (!outUrl) throw new Error("fal.ai から画像URLが返りませんでした。");
+
+  return { imageUrl: outUrl, seed: result.seed, model: MODEL };
 }
 
-export const falConfig = { model: MODEL, controlnet: CONTROLNET };
+async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+export const falConfig = { model: MODEL, strength: STRENGTH };
