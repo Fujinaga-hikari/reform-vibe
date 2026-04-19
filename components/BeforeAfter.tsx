@@ -26,11 +26,11 @@ export default function BeforeAfter({ before, after }: Props) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-sm font-semibold tracking-wide text-navy-500">
           BEFORE / AFTER
         </h3>
-        <div className="inline-flex rounded-full border border-navy-100 bg-white p-1 text-sm">
+        <div className="inline-flex w-full justify-center rounded-full border border-navy-100 bg-white p-1 text-sm sm:w-auto">
           <button
             type="button"
             onClick={() => setMode("slider")}
@@ -63,7 +63,7 @@ export default function BeforeAfter({ before, after }: Props) {
       {mode === "slider" ? (
         <div
           ref={ref}
-          className="relative aspect-[4/3] w-full select-none overflow-hidden rounded-2xl border border-navy-100 bg-navy-50"
+          className="relative aspect-[4/3] w-full select-none touch-none overflow-hidden rounded-2xl border border-navy-100 bg-navy-50"
           onMouseDown={(e) => {
             dragging.current = true;
             updateFromClientX(e.clientX);

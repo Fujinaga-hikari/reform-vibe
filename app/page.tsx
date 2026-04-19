@@ -161,50 +161,46 @@ export default function HomePage() {
   }
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 pb-24 pt-10 sm:px-8">
+    <main className="mx-auto w-full max-w-5xl px-5 pb-24 pt-8 sm:px-8 sm:pt-10">
       <Header />
 
-      <section className="mt-12 grid gap-8 md:grid-cols-[1.1fr_1fr] md:items-center">
-        <div>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-3 py-1 text-xs font-medium text-navy-700">
-            <Sparkles className="h-3.5 w-3.5" />
-            Micro-SaaS β版
-          </span>
-          <h1 className="mt-4 text-3xl font-bold leading-tight tracking-tight text-navy-900 sm:text-5xl">
-            現場写真1枚から、
-            <br />
-            <span className="text-navy-600">リフォーム提案</span>を一瞬で。
-          </h1>
-          <p className="mt-5 text-base leading-relaxed text-navy-600 sm:text-lg">
-            スマホで撮った内装写真をアップするだけ。部屋の構造はそのままに、AIが
-            <strong className="font-semibold text-navy-800">
-              3つのスタイル
-            </strong>
-            で内装を描き換えます。お客様への提案スピードを、劇的に上げる。
-          </p>
-          <div className="mt-6 flex flex-wrap gap-4 text-sm text-navy-500">
-            <Feature icon={Camera} text="スマホで撮るだけ" />
-            <Feature icon={Zap} text="30秒で生成" />
-            <Feature icon={ShieldCheck} text="構造は維持" />
-          </div>
+      <section className="mt-10 flex flex-col items-center text-center sm:mt-14">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-navy-50 px-3 py-1 text-xs font-medium text-navy-700">
+          <Sparkles className="h-3.5 w-3.5" />
+          Micro-SaaS β版
+        </span>
+        <h1 className="mt-5 text-balance text-[1.75rem] font-bold leading-[1.3] tracking-tight text-navy-900 sm:text-4xl md:text-5xl">
+          現場写真1枚から、<span className="text-navy-600">リフォーム提案</span>
+          を一瞬で。
+        </h1>
+        <p className="mt-4 max-w-2xl text-balance text-sm leading-relaxed text-navy-600 sm:mt-5 sm:text-lg">
+          スマホで撮った内装写真をアップするだけ。部屋の構造はそのままに、AIが
+          <strong className="font-semibold text-navy-800">
+            5つのスタイル
+          </strong>
+          で内装を描き換えます。お客様への提案スピードを劇的に上げる。
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-navy-500 sm:text-sm">
+          <Feature icon={Camera} text="スマホで撮るだけ" />
+          <Feature icon={Zap} text="30秒で生成" />
+          <Feature icon={ShieldCheck} text="構造は維持" />
         </div>
-        <HeroVisual />
       </section>
 
-      <section className="mt-16 rounded-3xl border border-navy-100 bg-white p-6 shadow-sm sm:p-8">
+      <section className="mt-10 rounded-3xl border border-navy-100 bg-white p-5 shadow-sm sm:mt-16 sm:p-8">
         <Step number={1} title="現場写真をアップロード" />
         <div className="mt-4">
           <ImageUploader value={image} onChange={setImage} />
         </div>
 
-        <div className="mt-10">
+        <div className="mt-8 sm:mt-10">
           <Step number={2} title="仕上がりスタイルを選ぶ" />
           <div className="mt-4">
             <StyleSelector value={styleId} onChange={setStyleId} />
           </div>
         </div>
 
-        <div className="mt-10">
+        <div className="mt-8 sm:mt-10">
           <Step number={3} title="AIで生成" />
           <div className="mt-4 space-y-4">
             <button
@@ -322,36 +318,6 @@ function Step({ number, title }: { number: number; title: string }) {
       <h2 className="text-lg font-semibold text-navy-900 sm:text-xl">
         {title}
       </h2>
-    </div>
-  );
-}
-
-function HeroVisual() {
-  return (
-    <div className="relative aspect-[4/3] overflow-hidden rounded-3xl bg-gradient-to-br from-navy-900 via-navy-700 to-navy-500 shadow-2xl shadow-navy-900/20">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
-      <div className="relative flex h-full flex-col justify-between p-6 text-white sm:p-8">
-        <div className="flex items-center justify-between">
-          <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium backdrop-blur">
-            BEFORE → AFTER
-          </span>
-          <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-navy-700">
-            北欧モダン
-          </span>
-        </div>
-        <div>
-          <p className="text-sm text-navy-100">生成時間</p>
-          <p className="text-4xl font-bold tracking-tight">
-            24<span className="ml-0.5 text-xl font-medium">秒</span>
-          </p>
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-white/20">
-            <div className="h-full w-4/5 rounded-full bg-white shimmer-bg animate-shimmer" />
-          </div>
-          <p className="mt-3 text-xs text-navy-100">
-            ControlNet で部屋の輪郭を保ったまま再レンダリング。
-          </p>
-        </div>
-      </div>
     </div>
   );
 }
