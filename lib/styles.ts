@@ -1,7 +1,12 @@
-import { Hammer, Leaf, Snowflake } from "lucide-react";
+import { Hammer, Moon, Sparkles, Sun, TreePine } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-export type ReformStyleId = "scandi" | "japanese" | "industrial";
+export type ReformStyleId =
+  | "wa-modern"
+  | "simple-modern"
+  | "natural-wood"
+  | "hotel-like"
+  | "kominka";
 
 export interface ReformStyle {
   id: ReformStyleId;
@@ -15,37 +20,59 @@ export interface ReformStyle {
 
 export const REFORM_STYLES: ReformStyle[] = [
   {
-    id: "scandi",
-    label: "北欧モダン",
-    subLabel: "Scandinavian Modern",
+    id: "wa-modern",
+    label: "和モダン",
+    subLabel: "Japanese Modern",
     description:
-      "白を基調にした明るい配色、ナチュラルな木目、シンプルで温かみのある家具。",
+      "畳と障子を活かしつつ、間接照明や黒の造作でモダンに洗練された落ち着きのある空間。",
     prompt:
-      "Completely renovated into a bright photorealistic Scandinavian modern interior. Pure white painted walls, pale light oak wood flooring with visible grain, clean minimalist furniture in soft beige and light grey fabrics, sheer white linen curtains, soft natural daylight, subtle green plants, cozy and airy atmosphere, airbnb plus interior photography, 8k, professional architectural render. Remove all tatami, shoji, concrete, and industrial elements.",
-    icon: Snowflake,
-    accent: "from-sky-100 to-white",
+      "Completely renovated into a photorealistic modern Japanese interior (wa-modern). Fresh tatami mat flooring with clean linen edging, paper shoji screens in slim black lacquered wooden frames, dark stained wooden ceiling beams, low minimalist cedar furniture with clean lines, built-in cedar wall storage, a single ikebana arrangement, soft indirect warm lighting hidden in cove ceilings, matte black accents, deep neutral palette of cream, charcoal, and warm wood, refined zen-inspired serenity, Japanese premium ryokan meets contemporary apartment, architectural photography, 8k.",
+    icon: Moon,
+    accent: "from-stone-100 to-white",
   },
   {
-    id: "japanese",
-    label: "和風",
-    subLabel: "Japanese Traditional",
+    id: "simple-modern",
+    label: "シンプル洋室",
+    subLabel: "Simple Modern",
     description:
-      "畳、障子、木の梁を活かした落ち着きのある空間。侘び寂びを感じる質感。",
+      "白壁とオーク床、造作収納で整えた、明るくすっきりした日本のマンション定番スタイル。",
     prompt:
-      "Completely renovated into a serene photorealistic traditional Japanese ryokan interior. Tatami mat flooring, shoji paper sliding screens, dark stained wooden ceiling beams, low wooden furniture in natural cedar, a small ikebana flower arrangement, soft warm ambient lighting filtered through shoji, wabi-sabi aesthetic, minimal and calm, Japanese ryokan interior photography, 8k. Remove any modern western, Scandinavian, or industrial elements.",
-    icon: Leaf,
-    accent: "from-emerald-50 to-white",
+      "Completely renovated into a photorealistic simple modern Japanese apartment interior. Clean pure white painted walls, light oak engineered wood flooring with subtle grain, built-in white cabinetry with handleless doors, minimalist Japanese-contemporary furniture in white and pale wood, sheer white linen curtains, recessed ceiling downlights and soft diffused natural daylight, neat and uncluttered, a few small green houseplants, bright airy atmosphere, typical high-end Tokyo mansion interior photography, 8k. Remove any tatami, shoji, exposed beams, or industrial elements.",
+    icon: Sun,
+    accent: "from-slate-50 to-white",
   },
   {
-    id: "industrial",
-    label: "インダストリアル",
-    subLabel: "Industrial Loft",
+    id: "natural-wood",
+    label: "ナチュラルウッド",
+    subLabel: "Natural Wood / Muji-style",
     description:
-      "むき出しのコンクリート、黒いスチール、ヴィンテージな木。男前ロフト空間。",
+      "明るい木とグレージュを基調に、無印良品のようなミニマルで温かみのある空間。",
     prompt:
-      "Completely renovated into a photorealistic industrial loft interior. Raw exposed concrete walls with visible texture, black matte steel window frames and beams, polished concrete floor, weathered reclaimed wood accents, vintage leather sofa, Edison filament bulbs hanging from black metal pendants, moody dramatic lighting, urban masculine atmosphere, Brooklyn warehouse conversion, architectural photography, 8k. Remove all tatami mats, shoji screens, paper walls, and traditional Japanese elements.",
+      "Completely renovated into a photorealistic natural-wood Japanese interior in Muji-style. Pale birch and white oak wood flooring and wall panels with soft visible grain, warm greige painted walls, simple cotton-linen fabric sofa in oatmeal beige, low natural-wood shelves with a few books and pottery, small potted olive plant, soft daylight through sheer curtains, warm ambient paper pendant light, minimal, cozy and calm, Muji / Ryohin Keikaku concept store aesthetic, interior photography, 8k. Remove any industrial, dark, luxury, or traditional Japanese elements like tatami and shoji.",
+    icon: TreePine,
+    accent: "from-amber-50 to-white",
+  },
+  {
+    id: "hotel-like",
+    label: "ホテルライク",
+    subLabel: "Hotel-Like Premium",
+    description:
+      "ダークウッドと間接照明、落ち着きのあるグレージュで演出する、上質な都市型ホテル空間。",
+    prompt:
+      "Completely renovated into a photorealistic hotel-like luxury Japanese interior. Dark walnut wood flooring and wall paneling, warm taupe and charcoal painted walls, soft indirect cove lighting behind cornices, elegant brass wall sconces, plush neutral-toned sofa with textured fabric, marble-topped side tables, heavy blackout drapes with sheer inner curtains, a framed abstract artwork, low ambient warm lighting, sophisticated and calm, high-end urban hotel suite atmosphere, Park Hyatt Tokyo style, architectural interior photography, 8k. Remove any bright, casual, industrial, or traditional elements.",
+    icon: Sparkles,
+    accent: "from-neutral-100 to-white",
+  },
+  {
+    id: "kominka",
+    label: "古民家リノベ",
+    subLabel: "Kominka Renovation",
+    description:
+      "太い梁や柱を活かし、モダンキッチンや土間と組み合わせた温故知新のリノベーションスタイル。",
+    prompt:
+      "Completely renovated into a photorealistic kominka (traditional Japanese farmhouse) renovation interior. Exposed dark aged wooden ceiling beams and columns preserved, wide-plank aged pine flooring, a polished black mortar doma earthen floor entry area, a modern minimal kitchen with matte black and natural oak cabinetry tucked under the beams, a large wood-burning cast iron stove, vintage indigo fabric cushions on low wooden benches, paper lantern pendant lights, warm amber lighting with sunbeams through wooden latticework, a careful balance of century-old structure and contemporary craftsmanship, Japanese countryside farmhouse magazine photography, 8k.",
     icon: Hammer,
-    accent: "from-zinc-100 to-white",
+    accent: "from-orange-50 to-white",
   },
 ];
 
