@@ -104,6 +104,13 @@ function buildInput(model: string, prompt: string, imageUrl: string) {
     output_format: "jpeg",
   };
 
+  if (model.includes("flux-lora-depth") || model.includes("flux-lora-canny")) {
+    return {
+      ...base,
+      image_url: imageUrl,
+    };
+  }
+
   if (model.includes("control-lora-depth") || model.includes("control-lora-canny")) {
     return {
       ...base,
